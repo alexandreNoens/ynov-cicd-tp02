@@ -6,6 +6,7 @@ from app.utils import (
     apply_promo_code,
     calculate_average,
     calculate_delivery_fee,
+    calculate_order_total,
     calculate_surge,
     capitalize,
     clamp,
@@ -780,3 +781,157 @@ def test_should_return_open_multiplier_at_10h00_boundary() -> None:
 
     # Assert
     assert result == 1.0
+
+
+def test_should_compute_full_order_total_without_promo_for_tuesday_15h() -> (
+    None
+):
+    # Arrange
+    items = [{"name": "Pizza", "price": 12.50, "quantity": 2}]
+
+    # Act
+    result = calculate_order_total(items, 5, 2, None, 15.0, "mardi")
+
+    # Assert
+    assert result["subtotal"] == 25.0
+    assert result["discount"] == 0.0
+    assert result["deliveryFee"] == 3.0
+    assert result["surge"] == 1.0
+    assert result["total"] == 28.0
+
+
+def test_should_compute_full_order_total_with_20_percent_promo() -> None:
+    # Arrange
+    items = [{"name": "Pizza", "price": 12.50, "quantity": 2}]
+
+    # Act
+    result = calculate_order_total(
+        items,
+        5,
+        2,
+        "BIENVENUE20",
+        15.0,
+        "mardi",
+    )
+
+    # Assert
+    assert result["subtotal"] == 25.0
+    assert result["discount"] == 5.0
+    assert result["deliveryFee"] == 3.0
+    assert result["surge"] == 1.0
+    assert result["total"] == 23.0
+
+
+def test_should_apply_friday_evening_surge_only_to_delivery_fee() -> None:
+    # Arrange
+    items = [{"name": "Pizza", "price": 12.50, "quantity": 2}]
+
+    # Act
+    result = calculate_order_total(items, 5, 2, None, 20.0, "vendredi")
+
+    # Assert
+    assert result["subtotal"] == 25.0
+    assert result["deliveryFee"] == 3.0
+    assert result["surge"] == 1.8
+    assert result["total"] == 30.4
+
+
+def test_should_raise_error_when_items_are_empty() -> None:
+    # Arrange
+    items: list[dict[str, str | int | float]] = []
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="Items cannot be empty"):
+        calculate_order_total(items, 5, 2, None, 15.0, "mardi")
+
+
+def test_should_ignore_item_when_quantity_is_zero() -> None:
+    # Arrange
+    items = [
+        {"name": "Pizza", "price": 12.50, "quantity": 0},
+        {"name": "Drink", "price": 5.00, "quantity": 1},
+    ]
+
+    # Act
+    result = calculate_order_total(items, 5, 2, None, 15.0, "mardi")
+
+    # Assert
+    assert result["subtotal"] == 5.0
+    assert result["total"] == 8.0
+
+
+def test_should_raise_error_when_item_price_is_negative() -> None:
+    # Arrange
+    items = [{"name": "Pizza", "price": -1.0, "quantity": 1}]
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="Item price cannot be negative"):
+        calculate_order_total(items, 5, 2, None, 15.0, "mardi")
+
+
+def test_should_raise_error_when_order_is_placed_after_opening_hours() -> None:
+    # Arrange
+    items = [{"name": "Pizza", "price": 12.50, "quantity": 1}]
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="Store is closed"):
+        calculate_order_total(items, 5, 2, None, 23.0, "mardi")
+
+
+def test_should_raise_error_when_distance_is_out_of_delivery_area() -> None:
+    # Arrange
+    items = [{"name": "Pizza", "price": 12.50, "quantity": 1}]
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="out of service area"):
+        calculate_order_total(items, 15, 2, None, 15.0, "mardi")
+
+
+def test_should_return_all_expected_keys_in_order_total_object() -> None:
+    # Arrange
+    items = [{"name": "Pizza", "price": 12.50, "quantity": 1}]
+
+    # Act
+    result = calculate_order_total(items, 5, 2, None, 15.0, "mardi")
+
+    # Assert
+    assert set(result.keys()) == {
+        "subtotal",
+        "discount",
+        "deliveryFee",
+        "surge",
+        "total",
+    }
+
+
+def test_should_keep_two_decimals_for_returned_amounts() -> None:
+    # Arrange
+    items = [{"name": "Pizza", "price": 12.345, "quantity": 1}]
+
+    # Act
+    result = calculate_order_total(items, 3, 2, None, 15.0, "mardi")
+
+    # Assert
+    assert result["subtotal"] == 12.35
+    assert result["discount"] == 0.0
+    assert result["deliveryFee"] == 2.0
+    assert result["total"] == 14.35
+
+
+def test_should_match_subtotal_plus_delivery_without_promo() -> None:
+    # Arrange
+    items = [
+        {"name": "Pizza", "price": 12.50, "quantity": 1},
+        {"name": "Pasta", "price": 8.00, "quantity": 1},
+    ]
+
+    # Act
+    result = calculate_order_total(items, 5, 2, None, 15.0, "mardi")
+
+    # Assert
+    assert result["discount"] == 0.0
+    assert result["surge"] == 1.0
+    assert result["total"] == round(
+        result["subtotal"] + result["deliveryFee"],
+        2,
+    )

@@ -140,3 +140,74 @@ def calculate_surge(hour: float, day_of_week: str) -> float:
         return 1.0
 
     return 1.0
+
+
+DEFAULT_PROMO_CODES: list[dict[str, str | int | float]] = [
+    {
+        "code": "BIENVENUE20",
+        "type": "percentage",
+        "value": 20,
+        "minOrder": 15.0,
+        "expiresAt": "2099-12-31",
+    },
+    {
+        "code": "SAVE5",
+        "type": "fixed",
+        "value": 5,
+        "minOrder": 20.0,
+        "expiresAt": "2099-12-31",
+    },
+]
+
+
+def calculate_order_total(
+    items: list[dict[str, str | int | float]],
+    distance: float,
+    weight: float,
+    promo_code: str | None,
+    hour: float,
+    day_of_week: str,
+    promo_codes: list[dict[str, str | int | float]] | None = None,
+) -> dict[str, float]:
+    if not items:
+        raise ValueError("Items cannot be empty.")
+
+    subtotal = 0.0
+    for item in items:
+        price = float(item.get("price", 0))
+        quantity = int(item.get("quantity", 0))
+
+        if price < 0:
+            raise ValueError("Item price cannot be negative.")
+        if quantity < 0:
+            raise ValueError("Item quantity cannot be negative.")
+        if quantity == 0:
+            continue
+
+        subtotal += price * quantity
+
+    subtotal = round(subtotal, 2)
+    discounted_subtotal = apply_promo_code(
+        subtotal,
+        promo_code,
+        promo_codes if promo_codes is not None else DEFAULT_PROMO_CODES,
+    )
+    discount = round(subtotal - discounted_subtotal, 2)
+
+    delivery_fee = calculate_delivery_fee(distance, weight)
+    if delivery_fee is None:
+        raise ValueError("Delivery distance is out of service area.")
+
+    surge = calculate_surge(hour, day_of_week)
+    if surge == 0:
+        raise ValueError("Store is closed at this time.")
+
+    total = round(discounted_subtotal + (delivery_fee * surge), 2)
+
+    return {
+        "subtotal": subtotal,
+        "discount": discount,
+        "deliveryFee": round(delivery_fee, 2),
+        "surge": surge,
+        "total": total,
+    }
