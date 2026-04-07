@@ -912,3 +912,56 @@ def test_should_match_subtotal_plus_delivery_without_promo() -> None:
         result["subtotal"] + result["deliveryFee"],
         2,
     )
+
+
+def test_should_raise_error_for_invalid_promo_type() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "INVALID",
+            "type": "invalid_type",
+            "value": 10,
+            "minOrder": 0.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="Invalid promo code type"):
+        apply_promo_code(20.0, "INVALID", promo_codes)
+
+
+def test_should_return_surge_for_sunday_evening() -> None:
+    # Arrange
+    hour = 15.0
+    day_of_week = "dimanche"
+
+    # Act
+    result = calculate_surge(hour, day_of_week)
+
+    # Assert
+    assert result == 1.2
+
+
+def test_should_return_normal_surge_for_weekday_afternoon() -> None:
+    # Arrange
+    hour = 14.5
+    day_of_week = "mardi"
+
+    # Act
+    result = calculate_surge(hour, day_of_week)
+
+    # Assert
+    assert result == 1.0
+
+
+def test_should_return_normal_surge_for_weekday_early_morning() -> None:
+    # Arrange
+    hour = 15.5
+    day_of_week = "jeudi"
+
+    # Act
+    result = calculate_surge(hour, day_of_week)
+
+    # Assert
+    assert result == 1.0
