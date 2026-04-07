@@ -1,5 +1,6 @@
 import re
 import unicodedata
+from datetime import date
 
 
 def capitalize(text: str | None) -> str:
@@ -61,3 +62,41 @@ def calculate_delivery_fee(distance: float, weight: float) -> float | None:
         fee += 1.5
 
     return round(fee, 2)
+
+
+def apply_promo_code(
+    subtotal: float,
+    promo_code: str | None,
+    promo_codes: list[dict[str, str | int | float]] | None,
+) -> float:
+    if subtotal < 0:
+        raise ValueError("Subtotal cannot be negative.")
+    if not promo_code:
+        return round(subtotal, 2)
+
+    available_codes = promo_codes or []
+    promo = next(
+        (code for code in available_codes if code.get("code") == promo_code),
+        None,
+    )
+    if promo is None:
+        raise ValueError("Promo code does not exist.")
+
+    expires_at = date.fromisoformat(str(promo["expiresAt"]))
+    if expires_at < date.today():
+        return round(subtotal, 2)
+
+    min_order = float(promo.get("minOrder", 0))
+    if subtotal < min_order:
+        return round(subtotal, 2)
+
+    promo_type = promo.get("type")
+    value = float(promo.get("value", 0))
+    if promo_type == "percentage":
+        discount = subtotal * (value / 100)
+    elif promo_type == "fixed":
+        discount = value
+    else:
+        raise ValueError("Invalid promo code type.")
+
+    return round(max(0.0, subtotal - discount), 2)

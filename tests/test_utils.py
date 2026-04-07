@@ -1,6 +1,9 @@
+from datetime import date
+
 import pytest
 
 from app.utils import (
+    apply_promo_code,
     calculate_average,
     calculate_delivery_fee,
     capitalize,
@@ -439,3 +442,230 @@ def test_should_compute_precise_fee_for_10km_and_6kg() -> None:
 
     # Assert
     assert result == 7.0
+
+
+def test_should_apply_percentage_promo_when_code_is_valid() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "BIENVENUE20",
+            "type": "percentage",
+            "value": 20,
+            "minOrder": 15.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(50.0, "BIENVENUE20", promo_codes)
+
+    # Assert
+    assert result == 40.0
+
+
+def test_should_apply_fixed_promo_when_code_is_valid() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "SAVE5",
+            "type": "fixed",
+            "value": 5,
+            "minOrder": 10.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(30.0, "SAVE5", promo_codes)
+
+    # Assert
+    assert result == 25.0
+
+
+def test_should_apply_discount_when_min_order_is_respected() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "MINOK",
+            "type": "fixed",
+            "value": 5,
+            "minOrder": 25.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(25.0, "MINOK", promo_codes)
+
+    # Assert
+    assert result == 20.0
+
+
+def test_should_refuse_promo_when_code_is_expired() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "OLD",
+            "type": "percentage",
+            "value": 20,
+            "minOrder": 0.0,
+            "expiresAt": "2000-01-01",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(50.0, "OLD", promo_codes)
+
+    # Assert
+    assert result == 50.0
+
+
+def test_should_refuse_promo_when_subtotal_is_below_min_order() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "MIN30",
+            "type": "percentage",
+            "value": 10,
+            "minOrder": 30.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(20.0, "MIN30", promo_codes)
+
+    # Assert
+    assert result == 20.0
+
+
+def test_should_raise_error_when_promo_code_does_not_exist() -> None:
+    # Arrange
+    promo_codes = []
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="Promo code does not exist"):
+        apply_promo_code(20.0, "UNKNOWN", promo_codes)
+
+
+def test_should_never_return_negative_total_with_fixed_discount() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "SAVE10",
+            "type": "fixed",
+            "value": 10,
+            "minOrder": 0.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(5.0, "SAVE10", promo_codes)
+
+    # Assert
+    assert result == 0.0
+
+
+def test_should_return_zero_with_100_percent_promo() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "FREE100",
+            "type": "percentage",
+            "value": 100,
+            "minOrder": 0.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(19.0, "FREE100", promo_codes)
+
+    # Assert
+    assert result == 0.0
+
+
+def test_should_keep_zero_subtotal_even_when_promo_is_valid() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "ZERO",
+            "type": "fixed",
+            "value": 5,
+            "minOrder": 0.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(0.0, "ZERO", promo_codes)
+
+    # Assert
+    assert result == 0.0
+
+
+def test_should_accept_promo_when_it_expires_today() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "TODAY",
+            "type": "fixed",
+            "value": 5,
+            "minOrder": 0.0,
+            "expiresAt": date.today().isoformat(),
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(20.0, "TODAY", promo_codes)
+
+    # Assert
+    assert result == 15.0
+
+
+def test_should_not_apply_discount_when_promo_code_is_none() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "BIENVENUE20",
+            "type": "percentage",
+            "value": 20,
+            "minOrder": 0.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(30.0, None, promo_codes)
+
+    # Assert
+    assert result == 30.0
+
+
+def test_should_not_apply_discount_when_promo_code_is_empty() -> None:
+    # Arrange
+    promo_codes = [
+        {
+            "code": "BIENVENUE20",
+            "type": "percentage",
+            "value": 20,
+            "minOrder": 0.0,
+            "expiresAt": "2099-12-31",
+        }
+    ]
+
+    # Act
+    result = apply_promo_code(30.0, "", promo_codes)
+
+    # Assert
+    assert result == 30.0
+
+
+def test_should_raise_error_when_subtotal_is_negative() -> None:
+    # Arrange
+    promo_codes = []
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="Subtotal cannot be negative"):
+        apply_promo_code(-1.0, "ANY", promo_codes)
