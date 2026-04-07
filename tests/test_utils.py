@@ -6,6 +6,7 @@ from app.utils import (
     apply_promo_code,
     calculate_average,
     calculate_delivery_fee,
+    calculate_surge,
     capitalize,
     clamp,
     slugify,
@@ -669,3 +670,113 @@ def test_should_raise_error_when_subtotal_is_negative() -> None:
     # Act / Assert
     with pytest.raises(ValueError, match="Subtotal cannot be negative"):
         apply_promo_code(-1.0, "ANY", promo_codes)
+
+
+def test_should_return_normal_multiplier_for_tuesday_15h() -> None:
+    # Arrange
+    hour, day = 15.0, "mardi"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 1.0
+
+
+def test_should_return_lunch_multiplier_for_wednesday_12h30() -> None:
+    # Arrange
+    hour, day = 12.5, "mercredi"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 1.3
+
+
+def test_should_return_dinner_multiplier_for_thursday_20h() -> None:
+    # Arrange
+    hour, day = 20.0, "jeudi"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 1.5
+
+
+def test_should_return_weekend_evening_multiplier_for_friday_21h() -> None:
+    # Arrange
+    hour, day = 21.0, "vendredi"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 1.8
+
+
+def test_should_return_sunday_multiplier_for_sunday_14h() -> None:
+    # Arrange
+    hour, day = 14.0, "dimanche"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 1.2
+
+
+def test_should_return_normal_multiplier_at_11h30_boundary() -> None:
+    # Arrange
+    hour, day = 11.5, "mardi"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 1.0
+
+
+def test_should_return_dinner_multiplier_at_19h00_boundary() -> None:
+    # Arrange
+    hour, day = 19.0, "jeudi"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 1.5
+
+
+def test_should_return_weekend_evening_multiplier_at_22h00_boundary() -> None:
+    # Arrange
+    hour, day = 22.0, "vendredi"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 1.8
+
+
+def test_should_return_closed_multiplier_before_opening() -> None:
+    # Arrange
+    hour, day = 9.59, "mercredi"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 0.0
+
+
+def test_should_return_open_multiplier_at_10h00_boundary() -> None:
+    # Arrange
+    hour, day = 10.0, "lundi"
+
+    # Act
+    result = calculate_surge(hour, day)
+
+    # Assert
+    assert result == 1.0

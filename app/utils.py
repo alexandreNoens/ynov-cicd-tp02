@@ -100,3 +100,43 @@ def apply_promo_code(
         raise ValueError("Invalid promo code type.")
 
     return round(max(0.0, subtotal - discount), 2)
+
+
+def calculate_surge(hour: float, day_of_week: str) -> float:
+    day_key = (
+        unicodedata.normalize("NFKD", day_of_week)
+        .encode("ascii", "ignore")
+        .decode("ascii")
+        .lower()
+    )
+
+    if hour < 10 or hour > 22:
+        return 0.0
+
+    if day_key in {"sunday", "dimanche"}:
+        return 1.2
+
+    if day_key in {"friday", "vendredi", "saturday", "samedi"}:
+        if 19 <= hour <= 22:
+            return 1.8
+        return 1.0
+
+    if day_key in {
+        "monday",
+        "lundi",
+        "tuesday",
+        "mardi",
+        "wednesday",
+        "mercredi",
+        "thursday",
+        "jeudi",
+    }:
+        if 12 <= hour <= 13.5:
+            return 1.3
+        if 19 <= hour <= 21:
+            return 1.5
+        if (10 <= hour <= 11.5) or (14 <= hour <= 18):
+            return 1.0
+        return 1.0
+
+    return 1.0
