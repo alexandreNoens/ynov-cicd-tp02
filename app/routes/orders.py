@@ -46,7 +46,7 @@ def simulate_order(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("")
+@router.post("", status_code=201)
 def create_order(
     request: SimulateOrderRequest,
 ) -> dict[str, Any]:

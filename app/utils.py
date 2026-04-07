@@ -84,11 +84,13 @@ def apply_promo_code(
 
     expires_at = date.fromisoformat(str(promo["expiresAt"]))
     if expires_at < date.today():
-        return round(subtotal, 2)
+        raise ValueError("Promo code has expired.")
 
     min_order = float(promo.get("minOrder", 0))
     if subtotal < min_order:
-        return round(subtotal, 2)
+        raise ValueError(
+            f"Minimum order amount is {min_order}€ for this promo code."
+        )
 
     promo_type = promo.get("type")
     value = float(promo.get("value", 0))
@@ -156,6 +158,13 @@ DEFAULT_PROMO_CODES: list[dict[str, str | int | float]] = [
         "value": 5,
         "minOrder": 20.0,
         "expiresAt": "2099-12-31",
+    },
+    {
+        "code": "EXPIRED2025",
+        "type": "percentage",
+        "value": 10,
+        "minOrder": 0.0,
+        "expiresAt": "2025-12-31",
     },
 ]
 

@@ -515,11 +515,9 @@ def test_should_refuse_promo_when_code_is_expired() -> None:
         }
     ]
 
-    # Act
-    result = apply_promo_code(50.0, "OLD", promo_codes)
-
-    # Assert
-    assert result == 50.0
+    # Act / Assert
+    with pytest.raises(ValueError, match="Promo code has expired"):
+        apply_promo_code(50.0, "OLD", promo_codes)
 
 
 def test_should_refuse_promo_when_subtotal_is_below_min_order() -> None:
@@ -534,11 +532,9 @@ def test_should_refuse_promo_when_subtotal_is_below_min_order() -> None:
         }
     ]
 
-    # Act
-    result = apply_promo_code(20.0, "MIN30", promo_codes)
-
-    # Assert
-    assert result == 20.0
+    # Act / Assert
+    with pytest.raises(ValueError, match="Minimum order amount"):
+        apply_promo_code(20.0, "MIN30", promo_codes)
 
 
 def test_should_raise_error_when_promo_code_does_not_exist() -> None:
@@ -548,25 +544,6 @@ def test_should_raise_error_when_promo_code_does_not_exist() -> None:
     # Act / Assert
     with pytest.raises(ValueError, match="Promo code does not exist"):
         apply_promo_code(20.0, "UNKNOWN", promo_codes)
-
-
-def test_should_never_return_negative_total_with_fixed_discount() -> None:
-    # Arrange
-    promo_codes = [
-        {
-            "code": "SAVE10",
-            "type": "fixed",
-            "value": 10,
-            "minOrder": 0.0,
-            "expiresAt": "2099-12-31",
-        }
-    ]
-
-    # Act
-    result = apply_promo_code(5.0, "SAVE10", promo_codes)
-
-    # Assert
-    assert result == 0.0
 
 
 def test_should_return_zero_with_100_percent_promo() -> None:

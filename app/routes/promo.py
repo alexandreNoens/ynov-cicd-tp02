@@ -31,4 +31,7 @@ def validate_promo(
             "discount": request.subtotal - discounted_subtotal,
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        error_msg = str(e)
+        if "does not exist" in error_msg:
+            raise HTTPException(status_code=404, detail=error_msg)
+        raise HTTPException(status_code=400, detail=error_msg)
