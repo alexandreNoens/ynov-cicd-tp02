@@ -7,6 +7,8 @@ app = FastAPI(title="TP02 API")
 
 app.include_router(orders_router)
 app.include_router(promo_router)
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}

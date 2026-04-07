@@ -36,3 +36,6 @@ clean:
 
 format:
 	$(RUFF) format .
+
+fix:
+	$(RUFF) check . --fix
