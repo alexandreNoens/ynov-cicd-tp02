@@ -44,3 +44,20 @@ def sort_students(
         key=lambda student: student[sort_by],
         reverse=order == "desc",
     )
+
+
+def calculate_delivery_fee(distance: float, weight: float) -> float | None:
+    if distance < 0:
+        raise ValueError("Distance cannot be negative.")
+    if weight < 0:
+        raise ValueError("Weight cannot be negative.")
+    if distance > 10:
+        return None
+
+    fee = 2.0
+    if distance > 3:
+        fee += (distance - 3) * 0.5
+    if weight > 5:
+        fee += 1.5
+
+    return round(fee, 2)

@@ -1,5 +1,8 @@
+import pytest
+
 from app.utils import (
     calculate_average,
+    calculate_delivery_fee,
     capitalize,
     clamp,
     slugify,
@@ -308,3 +311,131 @@ def test_should_default_to_ascending_order() -> None:
 
     # Assert
     assert [student["grade"] for student in result] == [10, 12, 14]
+
+
+def test_should_return_base_fee_when_distance_is_under_included_range() -> None:
+    # Arrange
+    distance, weight = 2, 1
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result == 2.0
+
+
+def test_should_add_distance_fee_when_distance_is_between_3_and_10() -> None:
+    # Arrange
+    distance, weight = 7, 3
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result == 4.0
+
+
+def test_should_add_heavy_weight_supplement_when_weight_is_above_5kg() -> None:
+    # Arrange
+    distance, weight = 5, 8
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result == 4.5
+
+
+def test_should_return_base_fee_when_distance_is_exactly_3km() -> None:
+    # Arrange
+    distance, weight = 3, 2
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result == 2.0
+
+
+def test_should_accept_order_when_distance_is_exactly_10km() -> None:
+    # Arrange
+    distance, weight = 10, 4
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result == 5.5
+
+
+def test_should_not_add_weight_supplement_when_weight_is_exactly_5kg() -> None:
+    # Arrange
+    distance, weight = 6, 5
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result == 3.5
+
+
+def test_should_return_none_when_distance_is_above_10km() -> None:
+    # Arrange
+    distance, weight = 15, 2
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result is None
+
+
+def test_should_raise_error_when_distance_is_negative() -> None:
+    # Arrange
+    distance, weight = -1, 2
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="Distance cannot be negative"):
+        calculate_delivery_fee(distance, weight)
+
+
+def test_should_raise_error_when_weight_is_negative() -> None:
+    # Arrange
+    distance, weight = 2, -1
+
+    # Act / Assert
+    with pytest.raises(ValueError, match="Weight cannot be negative"):
+        calculate_delivery_fee(distance, weight)
+
+
+def test_should_accept_zero_distance_and_return_base_fee() -> None:
+    # Arrange
+    distance, weight = 0, 2
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result == 2.0
+
+
+def test_should_compute_precise_fee_for_6km_and_2kg() -> None:
+    # Arrange
+    distance, weight = 6, 2
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result == 3.5
+
+
+def test_should_compute_precise_fee_for_10km_and_6kg() -> None:
+    # Arrange
+    distance, weight = 10, 6
+
+    # Act
+    result = calculate_delivery_fee(distance, weight)
+
+    # Assert
+    assert result == 7.0
