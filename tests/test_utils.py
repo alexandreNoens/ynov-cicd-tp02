@@ -1,6 +1,10 @@
-import pytest
-
-from app.utils import calculate_average, capitalize, clamp, slugify
+from app.utils import (
+    calculate_average,
+    capitalize,
+    clamp,
+    slugify,
+    sort_students,
+)
 
 
 def test_should_capitalize_first_letter_when_text_is_lowercase() -> None:
@@ -190,3 +194,117 @@ def test_should_return_value_when_minimum_equals_maximum() -> None:
 
     # Assert
     assert result == 0
+
+
+def test_should_sort_students_by_grade_ascending() -> None:
+    # Arrange
+    students = [
+        {"name": "Zoe", "grade": 14, "age": 20},
+        {"name": "Alice", "grade": 10, "age": 22},
+        {"name": "Bob", "grade": 12, "age": 19},
+    ]
+
+    # Act
+    result = sort_students(students, "grade", "asc")
+
+    # Assert
+    assert [student["grade"] for student in result] == [10, 12, 14]
+
+
+def test_should_sort_students_by_grade_descending() -> None:
+    # Arrange
+    students = [
+        {"name": "Zoe", "grade": 14, "age": 20},
+        {"name": "Alice", "grade": 10, "age": 22},
+        {"name": "Bob", "grade": 12, "age": 19},
+    ]
+
+    # Act
+    result = sort_students(students, "grade", "desc")
+
+    # Assert
+    assert [student["grade"] for student in result] == [14, 12, 10]
+
+
+def test_should_sort_students_by_name_ascending() -> None:
+    # Arrange
+    students = [
+        {"name": "Zoe", "grade": 14, "age": 20},
+        {"name": "Alice", "grade": 10, "age": 22},
+        {"name": "Bob", "grade": 12, "age": 19},
+    ]
+
+    # Act
+    result = sort_students(students, "name", "asc")
+
+    # Assert
+    assert [student["name"] for student in result] == ["Alice", "Bob", "Zoe"]
+
+
+def test_should_sort_students_by_age_ascending() -> None:
+    # Arrange
+    students = [
+        {"name": "Zoe", "grade": 14, "age": 20},
+        {"name": "Alice", "grade": 10, "age": 22},
+        {"name": "Bob", "grade": 12, "age": 19},
+    ]
+
+    # Act
+    result = sort_students(students, "age", "asc")
+
+    # Assert
+    assert [student["age"] for student in result] == [19, 20, 22]
+
+
+def test_should_return_empty_array_for_null_input() -> None:
+    # Arrange
+    students = None
+
+    # Act
+    result = sort_students(students, "grade", "asc")
+
+    # Assert
+    assert result == []
+
+
+def test_should_return_empty_array_for_empty_input() -> None:
+    # Arrange
+    students: list[dict[str, str | int | float]] = []
+
+    # Act
+    result = sort_students(students, "grade", "asc")
+
+    # Assert
+    assert result == []
+
+
+def test_should_not_modify_the_original_array() -> None:
+    # Arrange
+    students = [
+        {"name": "Zoe", "grade": 14, "age": 20},
+        {"name": "Alice", "grade": 10, "age": 22},
+        {"name": "Bob", "grade": 12, "age": 19},
+    ]
+    original = [student.copy() for student in students]
+
+    # Act
+    result = sort_students(students, "grade", "asc")
+
+    # Assert
+    assert students == original
+    assert result is not students
+
+
+def test_should_default_to_ascending_order() -> None:
+    # Arrange
+    students = [
+        {"name": "Zoe", "grade": 14, "age": 20},
+        {"name": "Alice", "grade": 10, "age": 22},
+        {"name": "Bob", "grade": 12, "age": 19},
+    ]
+
+    # Act
+    result = sort_students(students, "grade")
+
+    # Assert
+    assert [student["grade"] for student in result] == [10, 12, 14]

@@ -29,3 +29,18 @@ def slugify(text: str | None) -> str:
 
 def clamp(value: float, minimum: float, maximum: float) -> float:
     return max(minimum, min(value, maximum))
+
+
+def sort_students(
+    students: list[dict[str, str | int | float]] | None,
+    sort_by: str,
+    order: str = "asc",
+) -> list[dict[str, str | int | float]]:
+    if not students:
+        return []
+
+    return sorted(
+        students,
+        key=lambda student: student[sort_by],
+        reverse=order == "desc",
+    )
